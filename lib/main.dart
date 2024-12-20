@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'Views/search_notes.dart'; // Import the search_notes.dart file
 
 void main() {
   runApp(MyApp());
@@ -25,7 +26,6 @@ class NotesPage extends StatefulWidget {
 
 class _NotesPageState extends State<NotesPage> {
   List<String> notes = [];
-  bool isDarkMode = false;
 
   void _addNote() {
     showDialog(
@@ -62,16 +62,10 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  void _toggleTheme(bool isDark) {
-    setState(() {
-      isDarkMode = isDark;
-    });
-    runApp(
-      MaterialApp(
-        debugShowCheckedModeBanner: false,
-        title: 'Notes App',
-        theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
-        home: NotesPage(),
+  void _navigateToSearch() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SearchNotesPage(notes: notes),
       ),
     );
   }
@@ -84,32 +78,11 @@ class _NotesPageState extends State<NotesPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: () {},
+            onPressed: _navigateToSearch,
           ),
           IconButton(
             icon: Icon(Icons.filter_list),
             onPressed: () {},
-          ),
-          PopupMenuButton(
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                child: Row(
-                  children: [
-                    Switch(
-                      value: isDarkMode,
-                      onChanged: (value) {
-                        _toggleTheme(value);
-                      },
-                    ),
-                    SizedBox(width: 8),
-                    Text(isDarkMode ? "Dark Mode" : "Light Mode"),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                child: Text("Settings"),
-              ),
-            ],
           ),
         ],
       ),
@@ -119,7 +92,7 @@ class _NotesPageState extends State<NotesPage> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.note, // Replace with your preferred icon
+                    Icons.note,
                     size: 100,
                     color: Colors.grey[400],
                   ),
