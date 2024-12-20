@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'Views/search_notes.dart'; // Import the search_notes.dart file
+import 'Views/filter_notes.dart'; // Import the filter_notes.dart file
+import 'Views/search_notes.dart'; // Import the search_notes.dart file (optional if you already have it)
 
 void main() {
   runApp(MyApp());
@@ -26,6 +27,9 @@ class NotesPage extends StatefulWidget {
 
 class _NotesPageState extends State<NotesPage> {
   List<String> notes = [];
+  String _sortBy = 'modification_date';
+  bool _descending = true;
+  bool _favoritesOnTop = false;
 
   void _addNote() {
     showDialog(
@@ -70,6 +74,38 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
+  void _navigateToFilter() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => FilterNotesPage(
+          onApplyFilter: (String sortBy, bool descending, bool favoritesOnTop) {
+            setState(() {
+              _sortBy = sortBy;
+              _descending = descending;
+              _favoritesOnTop = favoritesOnTop;
+              _applySorting();
+            });
+          },
+        ),
+      ),
+    );
+  }
+
+  void _applySorting() {
+    // Example sorting logic
+    if (_favoritesOnTop) {
+      // Move "favorite" notes to the top (implement favorite logic as needed)
+    }
+
+    if (_sortBy == 'alphabetical') {
+      notes.sort((a, b) => a.compareTo(b));
+    }
+
+    if (_descending) {
+      notes = notes.reversed.toList();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,7 +118,7 @@ class _NotesPageState extends State<NotesPage> {
           ),
           IconButton(
             icon: Icon(Icons.filter_list),
-            onPressed: () {},
+            onPressed: _navigateToFilter,
           ),
         ],
       ),
