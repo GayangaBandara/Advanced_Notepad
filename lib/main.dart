@@ -1,57 +1,126 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(const NotepadApp());
+  runApp(MyApp());
 }
 
-class NotepadApp extends StatelessWidget {
-  const NotepadApp({super.key});
-
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: NotepadMainScreen(),
+      title: 'Notes App',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      home: NotesPage(),
     );
   }
 }
 
-class NotepadMainScreen extends StatelessWidget {
-  const NotepadMainScreen({super.key});
+class NotesPage extends StatefulWidget {
+  @override
+  _NotesPageState createState() => _NotesPageState();
+}
+
+class _NotesPageState extends State<NotesPage> {
+  List<String> notes = [];
+
+  void _addNote() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        TextEditingController _textController = TextEditingController();
+        return AlertDialog(
+          title: Text('Add Note'),
+          content: TextField(
+            controller: _textController,
+            decoration: InputDecoration(hintText: 'Enter your note'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_textController.text.isNotEmpty) {
+                  setState(() {
+                    notes.add(_textController.text);
+                  });
+                }
+                Navigator.of(context).pop();
+              },
+              child: Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Notepad',
-          style: TextStyle(color: Colors.white),
-        ),
-        centerTitle: true, // Align the title to the center
-        backgroundColor: const Color.fromARGB(255, 34, 34, 34),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: TextField(
-          maxLines: null, // Allows multiple lines
-          keyboardType: TextInputType.multiline,
-          decoration: InputDecoration(
-            hintText: 'Start typing your notes...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8.0),
-            ),
+        title: Text('All Notes'),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {},
           ),
-        ),
+          IconButton(
+            icon: Icon(Icons.filter_list),
+            onPressed: () {},
+          ),
+          PopupMenuButton(
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                child: Text("Settings"),
+              ),
+            ],
+          ),
+        ],
       ),
+      body: notes.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.note, // Replace with your preferred icon
+                    size: 100,
+                    color: Colors.grey[400],
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    'No notes',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _addNote,
+                    child: Text('Add first note'),
+                  ),
+                ],
+              ),
+            )
+          : ListView.builder(
+              itemCount: notes.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  title: Text(notes[index]),
+                );
+              },
+            ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // Action for adding or saving a note
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Note action executed!')),
-          );
-        },
-        backgroundColor: const Color.fromARGB(255, 34, 34, 34),
-        child: const Icon(Icons.save),
+        onPressed: _addNote,
+        child: Icon(Icons.add),
       ),
     );
   }
