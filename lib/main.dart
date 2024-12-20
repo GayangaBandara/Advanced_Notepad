@@ -26,16 +26,16 @@ class NotesPage extends StatefulWidget {
 class _NotesPageState extends State<NotesPage> {
   List<String> notes = [];
 
-  void _addNote() {
+  void _addOrEditNote({String? initialText, int? index}) {
+    TextEditingController _textController = TextEditingController(text: initialText);
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        TextEditingController _textController = TextEditingController();
         return AlertDialog(
-          title: Text('Add Note'),
+          title: Text(initialText == null ? 'Add Note' : 'Edit Note'),
           content: TextField(
             controller: _textController,
-            decoration: InputDecoration(hintText: 'Enter your note'),
+            decoration: InputDecoration(hintText: 'Enter your note topic'),
           ),
           actions: [
             TextButton(
@@ -48,7 +48,11 @@ class _NotesPageState extends State<NotesPage> {
               onPressed: () {
                 if (_textController.text.isNotEmpty) {
                   setState(() {
-                    notes.add(_textController.text);
+                    if (index == null) {
+                      notes.add(_textController.text);
+                    } else {
+                      notes[index] = _textController.text;
+                    }
                   });
                 }
                 Navigator.of(context).pop();
@@ -104,7 +108,7 @@ class _NotesPageState extends State<NotesPage> {
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: _addNote,
+                    onPressed: () => _addOrEditNote(),
                     child: Text('Add first note'),
                   ),
                 ],
@@ -115,11 +119,12 @@ class _NotesPageState extends State<NotesPage> {
               itemBuilder: (context, index) {
                 return ListTile(
                   title: Text(notes[index]),
+                  onTap: () => _addOrEditNote(initialText: notes[index], index: index),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addNote,
+        onPressed: () => _addOrEditNote(),
         child: Icon(Icons.add),
       ),
     );
