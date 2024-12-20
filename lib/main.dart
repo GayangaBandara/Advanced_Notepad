@@ -25,17 +25,18 @@ class NotesPage extends StatefulWidget {
 
 class _NotesPageState extends State<NotesPage> {
   List<String> notes = [];
+  bool isDarkMode = false;
 
-  void _addOrEditNote({String? initialText, int? index}) {
-    TextEditingController _textController = TextEditingController(text: initialText);
+  void _addNote() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        TextEditingController _textController = TextEditingController();
         return AlertDialog(
-          title: Text(initialText == null ? 'Add Note' : 'Edit Note'),
+          title: Text('Add Note'),
           content: TextField(
             controller: _textController,
-            decoration: InputDecoration(hintText: 'Enter your note topic'),
+            decoration: InputDecoration(hintText: 'Enter your note Topic'),
           ),
           actions: [
             TextButton(
@@ -48,11 +49,7 @@ class _NotesPageState extends State<NotesPage> {
               onPressed: () {
                 if (_textController.text.isNotEmpty) {
                   setState(() {
-                    if (index == null) {
-                      notes.add(_textController.text);
-                    } else {
-                      notes[index] = _textController.text;
-                    }
+                    notes.add(_textController.text);
                   });
                 }
                 Navigator.of(context).pop();
@@ -62,6 +59,20 @@ class _NotesPageState extends State<NotesPage> {
           ],
         );
       },
+    );
+  }
+
+  void _toggleTheme(bool isDark) {
+    setState(() {
+      isDarkMode = isDark;
+    });
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'Notes App',
+        theme: isDarkMode ? ThemeData.dark() : ThemeData.light(),
+        home: NotesPage(),
+      ),
     );
   }
 
@@ -81,6 +92,20 @@ class _NotesPageState extends State<NotesPage> {
           ),
           PopupMenuButton(
             itemBuilder: (context) => [
+              PopupMenuItem(
+                child: Row(
+                  children: [
+                    Switch(
+                      value: isDarkMode,
+                      onChanged: (value) {
+                        _toggleTheme(value);
+                      },
+                    ),
+                    SizedBox(width: 8),
+                    Text(isDarkMode ? "Dark Mode" : "Light Mode"),
+                  ],
+                ),
+              ),
               PopupMenuItem(
                 child: Text("Settings"),
               ),
@@ -108,7 +133,7 @@ class _NotesPageState extends State<NotesPage> {
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
-                    onPressed: () => _addOrEditNote(),
+                    onPressed: _addNote,
                     child: Text('Add first note'),
                   ),
                 ],
@@ -119,12 +144,11 @@ class _NotesPageState extends State<NotesPage> {
               itemBuilder: (context, index) {
                 return ListTile(
                   title: Text(notes[index]),
-                  onTap: () => _addOrEditNote(initialText: notes[index], index: index),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _addOrEditNote(),
+        onPressed: _addNote,
         child: Icon(Icons.add),
       ),
     );
