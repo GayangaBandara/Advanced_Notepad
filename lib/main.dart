@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'Views/filter_notes.dart'; // Import the filter_notes.dart file
-import 'Views/search_notes.dart'; // Import the search_notes.dart file (optional if you already have it)
+import 'package:share_plus/share_plus.dart';
 
 void main() {
   runApp(MyApp());
@@ -20,27 +19,54 @@ class MyApp extends StatelessWidget {
   }
 }
 
+class Note {
+  String title;
+  String description;
+  bool isStarred;
+
+  Note({
+    required this.title,
+    required this.description,
+    this.isStarred = false,
+  });
+}
+
 class NotesPage extends StatefulWidget {
   @override
   _NotesPageState createState() => _NotesPageState();
 }
 
 class _NotesPageState extends State<NotesPage> {
-  List<String> notes = [];
-  String _sortBy = 'modification_date';
-  bool _descending = true;
-  bool _favoritesOnTop = false;
+  List<Note> notes = [];
+  List<Note> filteredNotes = [];
+  String searchQuery = "";
+  String filterBy = 'All';
 
-  void _addNote() {
+  void _addOrEditNote({Note? existingNote}) {
+    final TextEditingController titleController =
+        TextEditingController(text: existingNote?.title ?? '');
+    final TextEditingController descriptionController =
+        TextEditingController(text: existingNote?.description ?? '');
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        TextEditingController _textController = TextEditingController();
         return AlertDialog(
-          title: Text('Add Note'),
-          content: TextField(
-            controller: _textController,
-            decoration: InputDecoration(hintText: 'Enter your note Topic'),
+          title: Text(existingNote == null ? 'Add Note' : 'Edit Note'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: titleController,
+                decoration: InputDecoration(hintText: 'Enter title'),
+              ),
+              SizedBox(height: 10),
+              TextField(
+                controller: descriptionController,
+                decoration: InputDecoration(hintText: 'Enter description'),
+                maxLines: 3,
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -51,11 +77,18 @@ class _NotesPageState extends State<NotesPage> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (_textController.text.isNotEmpty) {
-                  setState(() {
-                    notes.add(_textController.text);
-                  });
-                }
+                setState(() {
+                  if (existingNote == null) {
+                    notes.add(Note(
+                      title: titleController.text,
+                      description: descriptionController.text,
+                    ));
+                  } else {
+                    existingNote.title = titleController.text;
+                    existingNote.description = descriptionController.text;
+                  }
+                  _applyFilters();
+                });
                 Navigator.of(context).pop();
               },
               child: Text('Save'),
@@ -66,44 +99,132 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  void _navigateToSearch() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SearchNotesPage(notes: notes),
-      ),
+  void _deleteNote(Note note) {
+    setState(() {
+      notes.remove(note);
+      _applyFilters();
+    });
+  }
+
+  void _toggleStar(Note note) {
+    setState(() {
+      note.isStarred = !note.isStarred;
+      _applyFilters();
+    });
+  }
+
+  void _shareNote(Note note) {
+    Share.share('${note.title}\n\n${note.description}');
+  }
+
+  void _applyFilters() {
+    setState(() {
+      filteredNotes = notes
+          .where((note) =>
+              (filterBy == 'All' || (filterBy == 'Starred' && note.isStarred)) &&
+              (searchQuery.isEmpty ||
+                  note.title
+                      .toLowerCase()
+                      .contains(searchQuery.toLowerCase()) ||
+                  note.description
+                      .toLowerCase()
+                      .contains(searchQuery.toLowerCase())))
+          .toList();
+    });
+  }
+
+  void _showNoteOptions(Note note) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Wrap(
+          children: [
+            ListTile(
+              leading: Icon(Icons.edit),
+              title: Text('Edit'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _addOrEditNote(existingNote: note);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.delete),
+              title: Text('Delete'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _deleteNote(note);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.share),
+              title: Text('Share'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _shareNote(note);
+              },
+            ),
+            ListTile(
+              leading: Icon(note.isStarred ? Icons.star : Icons.star_border),
+              title: Text(note.isStarred ? 'Unstar' : 'Star'),
+              onTap: () {
+                Navigator.of(context).pop();
+                _toggleStar(note);
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 
-  void _navigateToFilter() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => FilterNotesPage(
-          onApplyFilter: (String sortBy, bool descending, bool favoritesOnTop) {
-            setState(() {
-              _sortBy = sortBy;
-              _descending = descending;
-              _favoritesOnTop = favoritesOnTop;
-              _applySorting();
-            });
-          },
-        ),
-      ),
+  void _showFilterDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Filter Notes'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: Text('All'),
+                leading: Radio(
+                  value: 'All',
+                  groupValue: filterBy,
+                  onChanged: (value) {
+                    setState(() {
+                      filterBy = value!;
+                      _applyFilters();
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+              ListTile(
+                title: Text('Starred'),
+                leading: Radio(
+                  value: 'Starred',
+                  groupValue: filterBy,
+                  onChanged: (value) {
+                    setState(() {
+                      filterBy = value!;
+                      _applyFilters();
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  void _applySorting() {
-    // Example sorting logic
-    if (_favoritesOnTop) {
-      // Move "favorite" notes to the top (implement favorite logic as needed)
-    }
-
-    if (_sortBy == 'alphabetical') {
-      notes.sort((a, b) => a.compareTo(b));
-    }
-
-    if (_descending) {
-      notes = notes.reversed.toList();
-    }
+  @override
+  void initState() {
+    super.initState();
+    filteredNotes = notes;
   }
 
   @override
@@ -114,52 +235,109 @@ class _NotesPageState extends State<NotesPage> {
         actions: [
           IconButton(
             icon: Icon(Icons.search),
-            onPressed: _navigateToSearch,
+            onPressed: () {
+              showSearch(
+                context: context,
+                delegate: NotesSearchDelegate(
+                  notes: notes,
+                  onSearch: (query) {
+                    setState(() {
+                      searchQuery = query;
+                      _applyFilters();
+                    });
+                  },
+                ),
+              );
+            },
           ),
           IconButton(
             icon: Icon(Icons.filter_list),
-            onPressed: _navigateToFilter,
+            onPressed: _showFilterDialog,
           ),
         ],
       ),
-      body: notes.isEmpty
+      body: filteredNotes.isEmpty
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.note,
-                    size: 100,
-                    color: Colors.grey[400],
-                  ),
-                  SizedBox(height: 20),
-                  Text(
-                    'No notes',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: _addNote,
-                    child: Text('Add first note'),
-                  ),
-                ],
-              ),
+              child: Text('No notes available.'),
             )
           : ListView.builder(
-              itemCount: notes.length,
+              itemCount: filteredNotes.length,
               itemBuilder: (context, index) {
+                final note = filteredNotes[index];
                 return ListTile(
-                  title: Text(notes[index]),
+                  title: Text(note.title),
+                  subtitle: Text(note.description),
+                  trailing: Icon(
+                    note.isStarred ? Icons.star : Icons.star_border,
+                    color: note.isStarred ? Colors.amber : null,
+                  ),
+                  onTap: () => _showNoteOptions(note),
                 );
               },
             ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addNote,
+        onPressed: () => _addOrEditNote(),
         child: Icon(Icons.add),
       ),
+    );
+  }
+}
+
+class NotesSearchDelegate extends SearchDelegate {
+  final List<Note> notes;
+  final Function(String) onSearch;
+
+  NotesSearchDelegate({required this.notes, required this.onSearch});
+
+  @override
+  List<Widget>? buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+          onSearch(query);
+        },
+      ),
+    ];
+  }
+
+  @override
+  Widget? buildLeading(BuildContext context) {
+    return IconButton(
+      icon: Icon(Icons.arrow_back),
+      onPressed: () {
+        close(context, null);
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    onSearch(query);
+    return Container();
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    final suggestions = notes
+        .where((note) =>
+            note.title.toLowerCase().contains(query.toLowerCase()) ||
+            note.description.toLowerCase().contains(query.toLowerCase()))
+        .toList();
+
+    return ListView.builder(
+      itemCount: suggestions.length,
+      itemBuilder: (context, index) {
+        final note = suggestions[index];
+        return ListTile(
+          title: Text(note.title),
+          subtitle: Text(note.description),
+          onTap: () {
+            close(context, null);
+          },
+        );
+      },
     );
   }
 }
