@@ -114,7 +114,14 @@ class _NotesPageState extends State<NotesPage> {
   }
 
   void _shareNote(Note note) {
-    Share.share('${note.title}\n\n${note.description}');
+    if (note.title.isEmpty && note.description.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Note is empty. Cannot share.")),
+      );
+      return;
+    }
+
+    Share.share('${note.title}\n\n${note.description}'.trim());
   }
 
   void _applyFilters() {
