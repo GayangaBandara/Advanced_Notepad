@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
+import 'search.dart';
+import 'filter.dart';
 
 void main() {
   runApp(MyApp());
@@ -184,50 +186,6 @@ class _NotesPageState extends State<NotesPage> {
     );
   }
 
-  void _showFilterDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Filter Notes'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                title: Text('All'),
-                leading: Radio(
-                  value: 'All',
-                  groupValue: filterBy,
-                  onChanged: (value) {
-                    setState(() {
-                      filterBy = value!;
-                      _applyFilters();
-                    });
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-              ListTile(
-                title: Text('Starred'),
-                leading: Radio(
-                  value: 'Starred',
-                  groupValue: filterBy,
-                  onChanged: (value) {
-                    setState(() {
-                      filterBy = value!;
-                      _applyFilters();
-                    });
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   void initState() {
     super.initState();
@@ -259,7 +217,12 @@ class _NotesPageState extends State<NotesPage> {
           ),
           IconButton(
             icon: Icon(Icons.filter_list),
-            onPressed: _showFilterDialog,
+            onPressed: () => showFilterDialog(context, filterBy, (newFilter) {
+              setState(() {
+                filterBy = newFilter;
+                _applyFilters();
+              });
+            }),
           ),
         ],
       ),
@@ -286,65 +249,6 @@ class _NotesPageState extends State<NotesPage> {
         onPressed: () => _addOrEditNote(),
         child: Icon(Icons.add),
       ),
-    );
-  }
-}
-
-class NotesSearchDelegate extends SearchDelegate {
-  final List<Note> notes;
-  final Function(String) onSearch;
-
-  NotesSearchDelegate({required this.notes, required this.onSearch});
-
-  @override
-  List<Widget>? buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-          onSearch(query);
-        },
-      ),
-    ];
-  }
-
-  @override
-  Widget? buildLeading(BuildContext context) {
-    return IconButton(
-      icon: Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    onSearch(query);
-    return Container();
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    final suggestions = notes
-        .where((note) =>
-            note.title.toLowerCase().contains(query.toLowerCase()) ||
-            note.description.toLowerCase().contains(query.toLowerCase()))
-        .toList();
-
-    return ListView.builder(
-      itemCount: suggestions.length,
-      itemBuilder: (context, index) {
-        final note = suggestions[index];
-        return ListTile(
-          title: Text(note.title),
-          subtitle: Text(note.description),
-          onTap: () {
-            close(context, null);
-          },
-        );
-      },
     );
   }
 }
